@@ -19,13 +19,13 @@ jobs:
       - name: 執行 Semgrep 掃描
         uses: returntocorp/semgrep-action@v1
         with:
-          generateSarif: true
+          args: --json --output=semgrep-results.json
 
       - name: 上傳 SAST 結果
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: semgrep.sarif
+          sarif_file: semgrep-results.json
 
   # 2. 依賴套件漏洞檢測 (SCA)
   sca-scan:
@@ -45,7 +45,7 @@ jobs:
             --enableExperimental
 
       - name: 上傳 SCA 結果
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: dependency-check-report.sarif
@@ -80,7 +80,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: 上傳容器掃描結果
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: trivy-results.sarif
@@ -124,7 +124,7 @@ jobs:
             --output sarif > checkov-results.sarif || true
 
       - name: 上傳 IaC 掃描結果
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: checkov-results.sarif
