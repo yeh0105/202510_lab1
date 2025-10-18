@@ -26,14 +26,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 執行 Semgrep 掃描
-        uses: semgrep/semgrep-action@v2
+        uses: semgrep/semgrep-action@v1
         with:
           config: >-
             p/security-audit
             p/secrets
             p/owasp-top-ten
+          generateSarif: true
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: 上傳 SAST 掃描結果
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
 
   # 2. 依賴套件漏洞檢測 (SCA)（僅在存在依賴檔案時執行）
   sca-scan:
