@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>井字遊戲 - 人機對戰</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>井字遊戲</h1>
+        <div class="game-info">
+            <div class="status" id="status">您是 X，輪到您下棋</div>
+            <div class="score">
+                <span>玩家 (X): <span id="playerScore">0</span></span>
+                <span>電腦 (O): <span id="computerScore">0</span></span>
+                <span>平手: <span id="drawScore">0</span></span>
+            </div>
+        </div>
+        <div class="board" id="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <div class="controls">
+            <button id="resetBtn">重新開始</button>
+            <button id="resetScoreBtn">重置分數</button>
+        </div>
+        <div class="difficulty">
+            <label for="difficultySelect">難度：</label>
+            <select id="difficultySelect">
+                <option value="easy">簡單</option>
+                <option value="medium" selected>中等</option>
+                <option value="hard">困難</option>
+            </select>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
