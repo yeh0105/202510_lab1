@@ -1,0 +1,326 @@
+/* Compact Header Styles - Research-backed optimization */
+.compact-header {
+  height: 52px;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  padding: 0 24px;
+  background: #2c3e50;
+  color: white;
+  gap: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 1000;
+}
+
+.brand-compact {
+  font-size: 18px;
+  font-weight: 600;
+  color: #3498db;
+  cursor: pointer;
+  margin: 0;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.brand-compact:hover {
+  color: #5dade2;
+}
+
+.project-selector-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.project-dropdown-compact {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+  max-width: 250px;
+}
+
+.project-dropdown-compact:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.project-dropdown-compact option {
+  background: #2c3e50;
+  color: white;
+}
+
+.status-indicators-compact {
+  display: flex;
+  gap: 12px;
+  font-size: 16px;
+  align-items: center;
+}
+
+.status-icon {
+  position: relative;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.status-icon:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.status-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1001;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.status-icon:hover .status-tooltip {
+  opacity: 1;
+}
+
+.user-nav-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-buttons-compact {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn-compact {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.nav-btn-compact:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.nav-btn-compact.active {
+  background: #3498db;
+  border-color: #3498db;
+}
+
+.user-info-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.user-email-compact {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-role-compact {
+  background: #3498db;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.logout-btn-compact {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.2s ease;
+}
+
+.logout-btn-compact:hover {
+  background: #c0392b;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .compact-header {
+    height: 48px;
+    grid-template-columns: auto 1fr auto;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .brand-compact {
+    font-size: 16px;
+  }
+
+  .project-selector-compact {
+    min-width: auto;
+    max-width: 120px;
+  }
+
+  .project-dropdown-compact {
+    font-size: 12px;
+    padding: 4px 8px;
+    min-width: 100px;
+    max-width: 120px;
+  }
+
+  .status-indicators-compact {
+    font-size: 14px;
+    gap: 8px;
+  }
+
+  .nav-buttons-compact {
+    display: none; /* Hide nav buttons on mobile */
+  }
+
+  .user-info-compact {
+    font-size: 12px;
+  }
+
+  .user-email-compact {
+    display: none; /* Hide email on mobile */
+  }
+
+  .logout-btn-compact {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
+/* Tablet responsive */
+@media (max-width: 1024px) {
+  .compact-header {
+    height: 50px;
+    padding: 0 20px;
+    gap: 14px;
+  }
+
+  .brand-compact {
+    font-size: 17px;
+  }
+
+  .project-selector-compact {
+    max-width: 200px;
+  }
+
+  .status-indicators-compact {
+    font-size: 15px;
+    gap: 10px;
+  }
+
+  .user-email-compact {
+    max-width: 120px;
+  }
+}
+
+/* Context Bar Styles */
+.context-bar {
+  height: 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  background: #ecf0f1;
+  border-bottom: 1px solid #bdc3c7;
+  position: relative;
+  z-index: 999;
+}
+
+.context-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #2c3e50;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.context-project-info {
+  font-size: 13px;
+  color: #7f8c8d;
+  font-weight: 400;
+}
+
+.context-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.context-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.context-btn:hover {
+  background: #2980b9;
+}
+
+.context-btn.secondary {
+  background: transparent;
+  color: #3498db;
+  border: 1px solid #3498db;
+}
+
+.context-btn.secondary:hover {
+  background: #3498db;
+  color: white;
+}
+
+/* Mobile context bar */
+@media (max-width: 768px) {
+  .context-bar {
+    height: 32px;
+    padding: 0 16px;
+  }
+
+  .context-title {
+    font-size: 14px;
+  }
+
+  .context-project-info {
+    font-size: 12px;
+  }
+
+  .context-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
