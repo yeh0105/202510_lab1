@@ -11,6 +11,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  packages: write
 
 jobs:
   # 1. 原始碼安全掃描 (SAST)
@@ -113,22 +114,47 @@ jobs:
           if find . -type f \( -name "Dockerfile*" -o -name "docker-compose*.yml" -o -name "docker-compose*.yaml" \) \
              -not -path "./.git/*" | grep -q .; then
             echo "has-container=true" >> $GITHUB_OUTPUT
-            echo "✅ 發現容器相關檔案，將執行掃描"
+            echo "✅ 發現容器相關檔案，將執行建置與掃描"
           else
             echo "has-container=false" >> $GITHUB_OUTPUT
             echo "ℹ️  未發現容器相關檔案，跳過容器掃描"
             echo "   本專案為純靜態網頁，無需容器映像檢測"
           fi
 
-      - name: 執行 Trivy 檔案系統掃描
+      - name: 設定 Docker Buildx
+        if: steps.check-container.outputs.has-container == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: 建置 Docker Image
+        if: steps.check-container.outputs.has-container == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: |
+            tic-tac-toe:${{ github.sha }}
+            tic-tac-toe:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 執行 Trivy 容器映像掃描
         if: steps.check-container.outputs.has-container == 'true'
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
+          scan-type: 'image'
+          image-ref: 'tic-tac-toe:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: 執行 Trivy 容器映像掃描（表格輸出）
+        if: steps.check-container.outputs.has-container == 'true'
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: 'tic-tac-toe:${{ github.sha }}'
+          format: 'table'
 
       - name: 準備 SARIF 檔案
         if: always()
@@ -272,7 +298,62 @@ jobs:
             echo "all-passed=true" >> $GITHUB_OUTPUT
           fi
 
-  # 7. 建置網站
+  # 7. 建置並推送 Docker Image 到 GitHub Container Registry
+  build-push-image:
+    runs-on: ubuntu-latest
+    name: 建置並推送 Docker Image
+    needs: [security-summary]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout 代碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 登入 GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 提取 Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 建置並推送 Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 推送完成通知
+        run: |
+          echo "🎉 Docker Image 已成功推送到 GitHub Container Registry"
+          echo ""
+          echo "📦 Image 標籤："
+          echo "${{ steps.meta.outputs.tags }}"
+          echo ""
+          echo "🔗 查看 Package："
+          echo "https://github.com/${{ github.repository }}/pkgs/container/$(basename ${{ github.repository }})"
+
+  # 8. 建置網站
   build:
     runs-on: ubuntu-latest
     name: 建置網站
@@ -290,7 +371,7 @@ jobs:
         with:
           path: './app'
 
-  # 8. 部署到 GitHub Pages
+  # 9. 部署到 GitHub Pages
   deploy:
     runs-on: ubuntu-latest
     name: 部署到 GitHub Pages
