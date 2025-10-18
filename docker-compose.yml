@@ -1,0 +1,18 @@
+services:
+  tic-tac-toe:
+    image: ghcr.io/tryweb/202510_lab1:latest
+    container_name: tic-tac-toe-game
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Taipei
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.example.description=井字遊戲 - 靜態網頁應用"
+      - "com.example.version=latest"
