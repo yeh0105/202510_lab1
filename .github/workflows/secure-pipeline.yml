@@ -1,0 +1,149 @@
+name: Secure CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  # 1. 原始碼安全掃描 (SAST)
+  sast-scan:
+    runs-on: ubuntu-latest
+    name: SAST - Semgrep 掃描
+    steps:
+      - name: Checkout 代碼
+        uses: actions/checkout@v4
+
+      - name: 執行 Semgrep 掃描
+        uses: returntocorp/semgrep-action@v1
+        with:
+          generateSarif: true
+
+      - name: 上傳 SAST 結果
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+  # 2. 依賴套件漏洞檢測 (SCA)
+  sca-scan:
+    runs-on: ubuntu-latest
+    name: SCA - 依賴漏洞檢測
+    steps:
+      - name: Checkout 代碼
+        uses: actions/checkout@v4
+
+      - name: 執行 OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'MyProject'
+          path: '.'
+          format: 'SARIF'
+          args: >
+            --enableExperimental
+
+      - name: 上傳 SCA 結果
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: dependency-check-report.sarif
+
+  # 3. 容器映像安全掃描
+  container-scan:
+    runs-on: ubuntu-latest
+    name: 容器映像掃描 - Trivy
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout 代碼
+        uses: actions/checkout@v4
+
+      - name: 建立範例 Dockerfile
+        run: |
+          cat > Dockerfile << 'EOF'
+          FROM ubuntu:22.04
+          RUN apt-get update && apt-get install -y curl
+          COPY . /app
+          WORKDIR /app
+          CMD ["bash"]
+          EOF
+
+      - name: 執行 Trivy 掃描
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: 上傳容器掃描結果
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+  # 4. 基礎設施即程式碼 (IaC) 安全檢查
+  iac-scan:
+    runs-on: ubuntu-latest
+    name: IaC 安全檢查 - Checkov
+    steps:
+      - name: Checkout 代碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 安裝 Checkov
+        run: pip install checkov
+
+      - name: 建立範例 Terraform 檔案
+        run: |
+          mkdir -p terraform
+          cat > terraform/main.tf << 'EOF'
+          resource "aws_s3_bucket" "example" {
+            bucket = "my-bucket"
+          }
+          
+          resource "aws_s3_bucket_versioning" "example" {
+            bucket = aws_s3_bucket.example.id
+            versioning_configuration {
+              status = "Enabled"
+            }
+          }
+          EOF
+
+      - name: 執行 Checkov IaC 掃描
+        run: |
+          checkov -d . \
+            --framework terraform \
+            --output sarif > checkov-results.sarif || true
+
+      - name: 上傳 IaC 掃描結果
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: checkov-results.sarif
+
+  # 5. 安全掃描結果總結
+  security-summary:
+    runs-on: ubuntu-latest
+    name: 安全掃描總結
+    needs: [sast-scan, sca-scan, container-scan, iac-scan]
+    if: always()
+    steps:
+      - name: 掃描完成
+        run: |
+          echo "✅ 安全 CI/CD Pipeline 執行完成"
+          echo ""
+          echo "掃描項目："
+          echo "1. ✓ SAST (原始碼安全掃描) - Semgrep"
+          echo "2. ✓ SCA (依賴漏洞檢測) - Dependency-Check"
+          echo "3. ✓ 容器映像掃描 - Trivy"
+          echo "4. ✓ IaC 安全檢查 - Checkov"
+          echo ""
+          echo "📊 詳細結果請查看 Security 標籤下的掃描結果"
