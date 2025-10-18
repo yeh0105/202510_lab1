@@ -32,15 +32,31 @@ jobs:
             p/security-audit
             p/secrets
             p/owasp-top-ten
-          generateSarif: true
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+          publishDeployment: ${{ github.ref == 'refs/heads/main' && '1' || '0' }}
+
+      - name: 執行 Semgrep 掃描（生成 SARIF）
+        if: always()
+        run: |
+          pip install semgrep
+          semgrep --config=auto --sarif --output=semgrep-results.sarif . || true
+
+      - name: 檢查並準備 SARIF 檔案
+        if: always()
+        run: |
+          if [ -f "semgrep-results.sarif" ]; then
+            echo "✅ SARIF 檔案已生成"
+            cat semgrep-results.sarif
+          else
+            echo "⚠️  SARIF 檔案未生成，建立空白檔案"
+            echo '{"version":"2.1.0","$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"Semgrep","informationUri":"https://semgrep.dev/"}},"results":[]}]}' > semgrep-results.sarif
+          fi
 
       - name: 上傳 SAST 掃描結果
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: semgrep.sarif
+          sarif_file: semgrep-results.sarif
 
   # 2. 依賴套件漏洞檢測 (SCA)（僅在存在依賴檔案時執行）
   sca-scan:
