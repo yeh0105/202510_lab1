@@ -14,24 +14,12 @@ RUN rm -rf /usr/share/nginx/html/*
 COPY app/ /usr/share/nginx/html/
 
 # 建立自訂的 Nginx 配置（監聽 8080 端口以支援非 root 用戶）
-RUN echo 'server { \
-    listen 8080; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-    # 安全標頭 \
-    add_header X-Frame-Options "SAMEORIGIN" always; \
-    add_header X-Content-Type-Options "nosniff" always; \
-    add_header X-XSS-Protection "1; mode=block" always; \
-    add_header Referrer-Policy "no-referrer-when-downgrade" always; \
-}' > /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 修改 Nginx 配置以支援非 root 用戶運行
-RUN sed -i 's/listen\s*80;/listen 8080;/' /etc/nginx/conf.d/default.conf && \
-    sed -i '/user  nginx;/d' /etc/nginx/nginx.conf && \
+RUN sed -i 's/listen\s*80;/listen 8080;/g' /etc/nginx/conf.d/default.conf && \
+    sed -i 's/listen\s*\[::\]:80;/listen [::]:8080;/g' /etc/nginx/conf.d/default.conf && \
+    sed -i '/user\s*nginx;/d' /etc/nginx/nginx.conf && \
     sed -i 's,/var/run/nginx.pid,/tmp/nginx.pid,' /etc/nginx/nginx.conf && \
     sed -i "/^http {/a \    proxy_temp_path /tmp/proxy_temp;\n    client_body_temp_path /tmp/client_temp;\n    fastcgi_temp_path /tmp/fastcgi_temp;\n    uwsgi_temp_path /tmp/uwsgi_temp;\n    scgi_temp_path /tmp/scgi_temp;\n" /etc/nginx/nginx.conf
 
