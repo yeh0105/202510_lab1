@@ -517,15 +517,113 @@ function clearHistory() {
 	deleteCookie('ttt_history');
 	renderHistory();
 }
+
+function formatTime(isoOrRaw) {
+	// 若提供 ISO 時間則格式化，否則嘗試解析或回傳原始字串
+	if (!isoOrRaw) return '';
+	try {
+		const d = new Date(isoOrRaw);
+		if (!isFinite(d)) return String(isoOrRaw);
+		return d.toLocaleString();
+	} catch (e) {
+		return String(isoOrRaw);
+	}
+}
+
 function renderHistory() {
 	const el = document.getElementById && document.getElementById('history');
 	if (!el) return;
 	el.innerHTML = '';
+
+	if (!matchHistory || matchHistory.length === 0) {
+		const empty = document.createElement('div');
+		empty.className = 'empty';
+		empty.textContent = '目前沒有對戰紀錄';
+		el.appendChild(empty);
+		return;
+	}
+
+	const list = document.createElement('ul');
+	list.id = 'historyList';
+
 	matchHistory.forEach((r, i) => {
-		const d = document.createElement('div');
-		d.textContent = `${i + 1}. ${r}`;
-		el.appendChild(d);
+		let rec = null;
+		if (typeof r === 'string') {
+			// 嘗試解析為 JSON 物件，否則當作簡短文字結果
+			try { rec = JSON.parse(r); } catch (e) { rec = { time: null, result: r, details: null }; }
+		} else if (typeof r === 'object' && r !== null) {
+			rec = r;
+		} else {
+			rec = { time: null, result: String(r), details: null };
+		}
+
+		const li = document.createElement('li');
+		li.className = 'history-item';
+
+		// 左側：索引 + 主要文字
+		const left = document.createElement('div');
+		left.className = 'history-left';
+		const idx = document.createElement('div');
+		idx.className = 'history-index';
+		idx.textContent = String(i + 1);
+		left.appendChild(idx);
+
+		const content = document.createElement('div');
+		content.className = 'history-content';
+		const titleRow = document.createElement('div');
+		// result badge
+		const badge = document.createElement('span');
+		badge.className = 'history-result';
+		const resText = rec.result || '紀錄';
+		// 判斷 badge 類型
+		const low = String(resText).toLowerCase();
+		if (low.includes('勝') || low.includes('win')) badge.classList.add('badge-win');
+		else if (low.includes('平') || low.includes('draw')) badge.classList.add('badge-draw');
+		else badge.classList.add('badge-lose');
+		badge.textContent = resText;
+		titleRow.appendChild(badge);
+		content.appendChild(titleRow);
+
+		// time
+		const time = document.createElement('div');
+		time.className = 'history-time';
+		time.textContent = rec.time ? formatTime(rec.time) : '';
+		content.appendChild(time);
+
+		// details
+		if (rec.details) {
+			const details = document.createElement('div');
+			details.className = 'history-details';
+			details.textContent = (typeof rec.details === 'string') ? rec.details : JSON.stringify(rec.details);
+			content.appendChild(details);
+		}
+
+		left.appendChild(content);
+		li.appendChild(left);
+
+		// 右側：簡短操作（例如顯示原始 JSON）
+		const right = document.createElement('div');
+		right.style.fontSize = '12px';
+		right.style.color = '#6b7280';
+		right.style.minWidth = '80px';
+		right.style.textAlign = 'right';
+		const rawBtn = document.createElement('button');
+		rawBtn.textContent = '原始';
+		rawBtn.style.fontSize = '12px';
+		rawBtn.style.padding = '4px 8px';
+		rawBtn.style.borderRadius = '6px';
+		rawBtn.style.border = '1px solid #e6e6e6';
+		rawBtn.style.background = '#fff';
+		rawBtn.addEventListener('click', () => {
+			alert(JSON.stringify(rec, null, 2));
+		});
+		right.appendChild(rawBtn);
+		li.appendChild(right);
+
+		list.appendChild(li);
 	});
+
+	el.appendChild(list);
 }
 
 // 啟動遊戲
