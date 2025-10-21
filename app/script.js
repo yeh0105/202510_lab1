@@ -549,7 +549,6 @@ function renderHistory() {
 	matchHistory.forEach((r, i) => {
 		let rec = null;
 		if (typeof r === 'string') {
-			// 嘗試解析為 JSON 物件，否則當作簡短文字結果
 			try { rec = JSON.parse(r); } catch (e) { rec = { time: null, result: r, details: null }; }
 		} else if (typeof r === 'object' && r !== null) {
 			rec = r;
@@ -559,6 +558,22 @@ function renderHistory() {
 
 		const li = document.createElement('li');
 		li.className = 'history-item';
+
+		// 判斷是否為 X 輸（若 result 包含中文/英文敘述）
+		const resultRaw = String(rec.result || '').trim();
+		const norm = resultRaw.toLowerCase().replace(/\s+/g, '');
+		let isXLost = false;
+		// 常見形式： "X 輸", "X lose", "X lost", "O 勝", "O win"
+		if (norm.includes('x輸') || norm.includes('xlose') || norm.includes('xlost') || norm.includes('xloss')) {
+			isXLost = true;
+		}
+		if (norm.includes('o勝') || norm.includes('owin') || norm.includes('owinner')) {
+			isXLost = true; // O 勝代表 X 輸
+		}
+		// 若有更明確的字段（例如 rec.winner = 'O'）也可判斷
+		if (!isXLost && rec.winner && String(rec.winner).toUpperCase() === 'O') isXLost = true;
+
+		if (isXLost) li.classList.add('lost-x');
 
 		// 左側：索引 + 主要文字
 		const left = document.createElement('div');
@@ -575,7 +590,6 @@ function renderHistory() {
 		const badge = document.createElement('span');
 		badge.className = 'history-result';
 		const resText = rec.result || '紀錄';
-		// 判斷 badge 類型
 		const low = String(resText).toLowerCase();
 		if (low.includes('勝') || low.includes('win')) badge.classList.add('badge-win');
 		else if (low.includes('平') || low.includes('draw')) badge.classList.add('badge-draw');
@@ -601,7 +615,7 @@ function renderHistory() {
 		left.appendChild(content);
 		li.appendChild(left);
 
-		// 右側：簡短操作（例如顯示原始 JSON）
+		// 右側：簡短操作
 		const right = document.createElement('div');
 		right.style.fontSize = '12px';
 		right.style.color = '#6b7280';

@@ -11,6 +11,10 @@
         #history { border:1px solid #e6e6e6; padding:12px; background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(16,24,40,0.04); }
         #historyList { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
         .history-item { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; padding:10px; border-radius:6px; background:linear-gradient(180deg,#fbfdff,#fff); border:1px solid #f0f4f8; }
+        .history-item.lost-x {
+            border-left: 4px solid #ef4444;
+            background: linear-gradient(180deg, #fff6f6, #fff);
+        }
         .history-left { display:flex; gap:12px; align-items:center; min-width:0; }
         .history-index { font-weight:600; color:#0f172a; min-width:28px; text-align:center; }
         .history-content { display:flex; flex-direction:column; min-width:0; }
@@ -21,6 +25,82 @@
         .history-time { font-size:12px; color:#6b7280; margin-top:4px; }
         .history-details { margin-top:6px; font-size:13px; color:#0f172a; opacity:0.9; word-break:break-word; }
         #history .empty { text-align:center; color:#6b7280; padding:12px 0; }
+
+        /* 新增：控制區與按鈕樣式 */
+        #controls {
+            display:flex;
+            flex-wrap:wrap;
+            align-items:center;
+            gap:8px 12px;
+            margin:12px 0;
+            font-family:system-ui,Segoe UI,Helvetica,Arial;
+        }
+        #controls label { font-size:14px; color:#111827; margin-right:6px; }
+        #controls input[type="number"] {
+            width:110px;
+            padding:8px 10px;
+            font-size:14px;
+            border:1px solid #d1d5db;
+            border-radius:8px;
+            background:#fff;
+            box-shadow:inset 0 1px 0 rgba(16,24,40,0.02);
+        }
+
+        .btn {
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            padding:8px 12px;
+            font-size:14px;
+            border-radius:8px;
+            border:1px solid transparent;
+            cursor:pointer;
+            user-select:none;
+            transition:all .12s ease;
+            background:#fff;
+        }
+        .btn:focus { outline:2px solid rgba(59,130,246,0.2); outline-offset:2px; }
+        .btn:hover { transform:translateY(-1px); box-shadow:0 4px 10px rgba(2,6,23,0.04); }
+
+        .btn-primary {
+            background:linear-gradient(180deg,#06b6d4,#0891b2);
+            color:#fff;
+            border-color:rgba(2,6,23,0.06);
+        }
+        .btn-primary:hover { filter:brightness(.98); }
+
+        .btn-danger {
+            background:linear-gradient(180deg,#f97316,#ef4444);
+            color:#fff;
+            border-color:rgba(2,6,23,0.06);
+        }
+        .btn-muted {
+            background:#f8fafc;
+            color:#0f172a;
+            border:1px solid #e6eef6;
+        }
+
+        /* 調整後：讓目前延遲更顯眼 */
+        #currentDelay {
+            display:inline-block;
+            color:#b91c1c;                  /* 顯眼紅色文字 */
+            background:#fff1f2;             /* 淡粉底色增加對比 */
+            font-weight:700;                /* 加粗 */
+            font-size:13px;
+            margin-left:6px;
+            padding:4px 8px;
+            border-radius:999px;            /* 徽章形狀 */
+            border:1px solid rgba(185,28,28,0.12);
+            box-shadow: 0 1px 0 rgba(2,6,23,0.04);
+        }
+
+        /* 小螢幕微調 */
+        @media (max-width:520px) {
+            #controls { gap:8px; }
+            #controls input[type="number"] { width:90px; }
+            .btn { padding:7px 10px; font-size:13px; border-radius:6px; }
+            #currentDelay { font-size:12px; padding:3px 6px; }
+        }
     </style>
 </head>
 <body>
@@ -58,15 +138,22 @@
             </select>
         </div>
     </div>
-    <section id="controls" style="margin:12px 0;">
+
+    <!-- 新增控制欄：設定延遲 / 清除紀錄（套用美化樣式） -->
+    <section id="controls" aria-label="遊戲控制">
         <label for="moveDelayInput">移動延遲 (ms):</label>
-        <input id="moveDelayInput" type="number" min="0" step="50" style="width:100px;" />
-        <button id="setDelayBtn">設定延遲</button>
-        <span id="currentDelay" style="margin-left:8px;color:#666;">(目前: — ms)</span>
-        &nbsp;&nbsp;
-        <button id="clearHistoryBtn">清除紀錄</button>
-        <button id="refreshHistoryBtn">重新載入紀錄</button>
+        <input id="moveDelayInput" type="number" min="0" step="50" />
+
+        <button id="setDelayBtn" class="btn btn-primary" title="儲存延遲設定">設定</button>
+        <span id="currentDelay" aria-live="polite">(目前: — ms)</span>
+
+        <!-- 操作按鈕群 -->
+        <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+            <button id="refreshHistoryBtn" class="btn btn-muted" title="重新載入對戰紀錄">🔄 重新載入</button>
+            <button id="clearHistoryBtn" class="btn btn-danger" title="清除所有對戰紀錄">🗑 清除紀錄</button>
+        </div>
     </section>
+
     <section id="matchHistory" style="margin-top:8px;">
         <h3 style="margin:0 0 8px 0;">對戰紀錄</h3>
         <div id="history" aria-live="polite">
