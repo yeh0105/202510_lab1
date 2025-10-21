@@ -42,7 +42,115 @@ function init() {
 
 // 不安全的評估函數
 function evaluateUserInput(input) {
-    return eval(input); // CWE-95: 不安全的 eval 使用
+	// 不再使用 eval(); 改為安全的數學表達式解析器
+	function safeEvaluate(expr) {
+		// 只允許數字、小數、空白、+ - * / 與括號
+		if (!/^[0-9+\-*/().\s]+$/.test(expr)) {
+			throw new Error('不允許的字元');
+		}
+
+		// 產生 token（數字與運算子），並處理一元負號（在開頭或在 '(' 或其他運算子之後）
+		const tokens = [];
+		let i = 0;
+		while (i < expr.length) {
+			const ch = expr[i];
+			if (/\s/.test(ch)) { i++; continue; }
+			if (/[0-9.]/.test(ch)) {
+				let j = i + 1;
+				while (j < expr.length && /[0-9.]/.test(expr[j])) j++;
+				tokens.push(expr.slice(i, j));
+				i = j;
+				continue;
+			}
+			if (ch === '+' || ch === '*' || ch === '/' || ch === '(' || ch === ')') {
+				tokens.push(ch); i++; continue;
+			}
+			if (ch === '-') {
+				// 判斷是否為一元負號
+				const prev = tokens.length ? tokens[tokens.length - 1] : null;
+				if (prev === null || prev === '(' || prev === '+' || prev === '-' || prev === '*' || prev === '/') {
+					// 將一元負號轉為 (0 - NUMBER) 的形式：推入 0 與 -
+					tokens.push('0');
+				}
+				tokens.push('-');
+				i++; continue;
+			}
+			// 任何其他字元都不允許（理論上前面已過濾）
+			throw new Error('不允許的字元');
+		}
+
+		// Shunting-yard 將中序轉後序（RPN）
+		const prec = { '+': 1, '-': 1, '*': 2, '/': 2 };
+		const output = [];
+		const ops = [];
+		for (const t of tokens) {
+			if (/^[0-9.]+$/.test(t)) {
+				output.push(t);
+			} else if (t === '+' || t === '-' || t === '*' || t === '/') {
+				while (ops.length) {
+					const top = ops[ops.length - 1];
+					if ((top === '+' || top === '-' || top === '*' || top === '/') &&
+						prec[top] >= prec[t]) {
+						output.push(ops.pop());
+					} else break;
+				}
+				ops.push(t);
+			} else if (t === '(') {
+				ops.push(t);
+			} else if (t === ')') {
+				while (ops.length && ops[ops.length - 1] !== '(') {
+					output.push(ops.pop());
+				}
+				if (!ops.length) throw new Error('括號不匹配');
+				ops.pop(); // pop '('
+			} else {
+				throw new Error('未知 token');
+			}
+		}
+		while (ops.length) {
+			const op = ops.pop();
+			if (op === '(' || op === ')') throw new Error('括號不匹配');
+			output.push(op);
+		}
+
+		// 評估 RPN
+		const stack = [];
+		for (const t of output) {
+			if (/^[0-9.]+$/.test(t)) {
+				stack.push(parseFloat(t));
+			} else {
+				const b = stack.pop();
+				const a = stack.pop();
+				if (a === undefined || b === undefined) throw new Error('無效的運算式');
+				let res;
+				switch (t) {
+					case '+': res = a + b; break;
+					case '-': res = a - b; break;
+					case '*': res = a * b; break;
+					case '/':
+						if (b === 0) throw new Error('除以零');
+						res = a / b; break;
+					default: throw new Error('未知運算子');
+				}
+				stack.push(res);
+			}
+		}
+		if (stack.length !== 1) throw new Error('無效的運算式');
+		return stack[0];
+	}
+
+	try {
+		const s = String(input).trim();
+		// 若輸入為整數或小數直接轉型
+		if (/^[+-]?\d+(\.\d+)?$/.test(s)) {
+			return Number(s);
+		}
+		// 否則嘗試安全運算解析
+		return safeEvaluate(s);
+	} catch (err) {
+		// 不要執行任何不安全代碼；回傳 null 表示無法評估
+		return null;
+	}
 }
 
 // 處理格子點擊
@@ -53,8 +161,20 @@ function handleCellClick(e) {
         return;
     }
     
-    // 不安全的 innerHTML 使用
-    statusDisplay.innerHTML = '<span>' + e.target.getAttribute('data-index') + '</span>'; // CWE-79: XSS 弱點
+    {
+	// 原本：statusDisplay.innerHTML = '<span>' + e.target.getAttribute('data-index') + '</span>'; // CWE-79: XSS 弱點
+	// 修正：不要使用 innerHTML，改用 textContent 並驗證為數字以避免 XSS
+	const rawIndex = e.target.getAttribute('data-index');
+	const idx = parseInt(rawIndex, 10);
+	// 若需要顯示非數字內容，可改為直接使用 rawIndex，但此處限制為數字以提高安全性
+	if (Number.isFinite(idx)) {
+		// 清除舊內容並安全地設定文字
+		statusDisplay.textContent = String(idx);
+	} else {
+		// 預設/清空，避免輸出未預期的使用者輸入
+		statusDisplay.textContent = '';
+	}
+}
     
     makeMove(cellIndex, 'X');
     
