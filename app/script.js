@@ -179,9 +179,8 @@ function handleCellClick(e) {
     makeMove(cellIndex, 'X');
     
     if (gameActive && currentPlayer === 'O') {
-        const userInput = prompt("輸入延遲時間（毫秒）");
-        // 直接使用使用者輸入作為 setTimeout 參數
-        setTimeout('computerMove()', userInput); // CWE-94: 代碼注入風險
+        const delay = getMoveDelay(); // 使用 cookie 或預設值，避免每次彈跳對話框
+        setTimeout(computerMove, delay);
     }
 }
 
@@ -233,6 +232,13 @@ function checkResult() {
         }
         statusDisplay.classList.add('winner');
         updateScoreDisplay();
+        
+        const resultText = winner === 'X' ? 'X 勝利' : 'O 勝利';
+        addToHistory({
+            time: new Date().toISOString(),
+            result: resultText,
+            details: null
+        });
         return;
     }
     
@@ -243,6 +249,12 @@ function checkResult() {
         statusDisplay.textContent = '平手！';
         statusDisplay.classList.add('draw');
         updateScoreDisplay();
+        
+        addToHistory({
+            time: new Date().toISOString(),
+            result: '平手',
+            details: null
+        });
     }
 }
 
@@ -438,6 +450,83 @@ function getApiKey() {
 	if (!API_KEY) {
 		console.warn('API key not found. Features requiring the API key will be disabled. Do NOT store secrets in source code or commit them to version control.');
 	}
+
+// 新增：Cookie helper（簡單版）
+function setCookie(name, value, days) {
+	const expires = days ? "; max-age=" + (days * 24 * 60 * 60) : "";
+	document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value || "") + expires + "; path=/";
+}
+function getCookie(name) {
+	const pairs = document.cookie.split(';').map(s => s.trim());
+	for (const p of pairs) {
+		if (!p) continue;
+		const [k, v] = p.split('=');
+		if (decodeURIComponent(k) === name) return decodeURIComponent(v || "");
+	}
+	return null;
+}
+function deleteCookie(name) {
+	setCookie(name, "", -1);
+}
+
+// 新增：移除每次 prompt，改用可儲存的預設延遲
+const DEFAULT_MOVE_DELAY_MS = 500;
+function getMoveDelay() {
+	const v = getCookie('ttt_move_delay_ms');
+	const n = parseInt(v, 10);
+	return Number.isFinite(n) && n >= 0 ? n : DEFAULT_MOVE_DELAY_MS;
+}
+function setMoveDelay(ms) {
+	if (!Number.isFinite(ms) || ms < 0) return;
+	setCookie('ttt_move_delay_ms', String(ms), 365);
+}
+
+// 新增：對戰紀錄儲存（Cookie），並提供顯示與清除
+let matchHistory = [];
+(function loadHistory() {
+	const raw = getCookie('ttt_history');
+	if (raw) {
+		try {
+			const parsed = JSON.parse(raw);
+			if (Array.isArray(parsed)) matchHistory = parsed;
+		} catch (e) {
+			// 無效的 cookie，忽略
+			matchHistory = [];
+		}
+	}
+	// 若頁面有 #history 元素，初始化顯示
+	renderHistory();
+})();
+
+function saveHistory() {
+	try {
+		setCookie('ttt_history', JSON.stringify(matchHistory), 365);
+	} catch (e) { /* ignore */ }
+}
+function addToHistory(record) {
+	// record 可以是字串或物件（此處轉成字串）
+	if (!record) return;
+	matchHistory.push(typeof record === 'string' ? record : JSON.stringify(record));
+	// 限制最大筆數以避免 cookie 過大（例如只保留最近 50 筆）
+	if (matchHistory.length > 50) matchHistory = matchHistory.slice(-50);
+	saveHistory();
+	renderHistory();
+}
+function clearHistory() {
+	matchHistory = [];
+	deleteCookie('ttt_history');
+	renderHistory();
+}
+function renderHistory() {
+	const el = document.getElementById && document.getElementById('history');
+	if (!el) return;
+	el.innerHTML = '';
+	matchHistory.forEach((r, i) => {
+		const d = document.createElement('div');
+		d.textContent = `${i + 1}. ${r}`;
+		el.appendChild(d);
+	});
+}
 
 // 啟動遊戲
 init();
