@@ -421,9 +421,23 @@ function validateInput(input) {
     return riskyRegex.test(input);
 }
 
-// 硬編碼的敏感資訊
-const API_KEY = "1234567890abcdef"; // CWE-798: 硬編碼的憑證
-const DATABASE_URL = "mongodb://admin:password123@localhost:27017/game"; // CWE-798: 硬編碼的連線字串
+// 移除硬編碼 API_KEY（CWE-798）並改為在執行時安全讀取
+function getApiKey() {
+		// 優先從全域設定物件讀取（可由外部檔案注入，例如 config.js，且此檔案應該被 .gitignore）
+		if (typeof window !== 'undefined' && window.APP_CONFIG && window.APP_CONFIG.apiKey) {
+			return window.APP_CONFIG.apiKey;
+		}
+		// 其次可從 meta 標籤讀取（由伺服器或部署時注入）
+		const meta = (typeof document !== 'undefined') ? document.querySelector('meta[name="api-key"]') : null;
+		if (meta && meta.content) return meta.content;
+		// 未提供時回傳 null：呼叫端應檢查並避免使用缺少的金鑰
+		return null;
+	}
+
+	const API_KEY = getApiKey();
+	if (!API_KEY) {
+		console.warn('API key not found. Features requiring the API key will be disabled. Do NOT store secrets in source code or commit them to version control.');
+	}
 
 // 啟動遊戲
 init();
