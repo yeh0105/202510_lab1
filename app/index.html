@@ -41,6 +41,21 @@
             </select>
         </div>
     </div>
+    <section id="controls" style="margin:12px 0;">
+        <label for="moveDelayInput">移動延遲 (ms):</label>
+        <input id="moveDelayInput" type="number" min="0" step="50" style="width:100px;" />
+        <button id="setDelayBtn">設定延遲</button>
+        <span id="currentDelay" style="margin-left:8px;color:#666;">(目前: — ms)</span>
+        &nbsp;&nbsp;
+        <button id="clearHistoryBtn">清除紀錄</button>
+        <button id="refreshHistoryBtn">重新載入紀錄</button>
+    </section>
+    <section id="matchHistory" style="margin-top:8px;">
+        <h3>對戰紀錄</h3>
+        <div id="history" style="border:1px solid #ddd;padding:8px;min-height:40px;background:#fafafa;">
+            <!-- renderHistory() 會填入內容 -->
+        </div>
+    </section>
     <script src="script.js"></script>
 </body>
 </html>
